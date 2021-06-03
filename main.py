@@ -161,13 +161,13 @@ def blacklist(client_socket, client_address, server_name, method):
 
 
 def cache(file_name, respond, max_age, connection):
-    # save file_name in CACHE
+    # save file_name in CACHE dictionary
     global CACHE
     CACHE[file_name] = [respond, time.time() + max_age, connection]
 
 
 def fetch(file_name):
-    #finds respond package with file_name, value as a list [respond,time,connection]
+    #finds respond package with file_name
     global CACHE
     respond = b''
     connection = False
