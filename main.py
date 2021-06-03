@@ -18,7 +18,7 @@ def prepare():
     # getting list of blocked websites
     global BLACKLIST, CACHE
     try:
-        with open("blacklist.txt") as f:
+        with open("blacklist.conf") as f:
             BLACKLIST = f.readlines()
     except:
         pass
@@ -92,18 +92,20 @@ def parser_request(server_name, server_port, msg):
     request_header = request[0]
     request_header = request_header.split(b'\r\n')
     method = request_header[0].decode()
+    if not server_name:
 
-    host = request_header[1].decode()
-    # domain name
-    server_name = host.split(" ")[-1]
-    # port
-    port_position = server_name.find(":")
-    # default port 80
-    if port_position == -1:
-        server_port = 80
-    else:
-        server_port = int(server_name[port_position + 1:])
-        server_name = server_name[:port_position]
+        host = request_header[4].decode()
+        # domain name
+        server_name = host.split(" ")[-1]
+        # port
+        port_position = server_name.find(":")
+        # default port 80
+        if port_position == -1:
+            server_port = 80
+        else:
+            server_port = int(server_name[port_position + 1:])
+            server_name = server_name[:port_position]
+
     for i in range(2, len(request_header)):
         if len(request_header[i]) < 50:
             if b'ache-Control:' in request_header[i]:
@@ -219,6 +221,8 @@ def proxy(client_socket, client_address):
             if blacklist(client_socket, client_address, server_name, method):
                 try:
                     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    if method[:7] == 'CONNECT':
+                        proxy_https(client_socket, server_socket, server_port, server_name)
                     server_socket.connect((server_name, server_port))
                 except:
                     break
@@ -240,6 +244,35 @@ def proxy(client_socket, client_address):
     if client_socket:
         client_socket.close()
 
+def proxy_https(client_socket,server_socket, server_port, server_name):
+    try:
+        server_socket.connect((server_name, server_port))
+        reply = "HTTP/1.1 200 Connection established\r\n"
+        reply += "ProxyServer-agent: PyProxyServer\r\n\r\n"
+        client_socket.sendall(reply.encode())
+    except socket.error as err:
+        print(err)
+    client_socket.setblocking(False)
+    server_socket.setblocking(False)
+
+    while True:
+        try:
+            data = client_socket.recv(8192)
+            if not data:
+                client_socket.close()
+                break
+            server_socket.sendall(data)
+        except socket.error:
+            pass
+
+        try:
+            reply = server_socket.recv(8192)
+            if not reply:
+                server_socket.close()
+                break
+            client_socket.sendall(reply)
+        except socket.error:
+            pass
 
 def main():
     s = create_proxy_socket('127.0.0.1', 8888)

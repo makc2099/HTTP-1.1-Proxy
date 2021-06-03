@@ -1,2 +1,0 @@
-push.services.mozilla.com
-ocsp.pki.goog
