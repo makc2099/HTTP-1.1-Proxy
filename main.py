@@ -52,9 +52,10 @@ def my_send(s, msg):
 
 
 def my_recv(s, timeout=0.3):
-    #recieving packets, block and recieve, if time between packets > 0.3 => close connection
+    #recieving packets ensuring that no packets are lost
     total_data = []
     data = b''
+    #wait for first message then open recv
     s.setblocking(1)
     try:
         data = s.recv(8192)
@@ -65,6 +66,7 @@ def my_recv(s, timeout=0.3):
     else:
         return b''
 
+    #if time between packets > 0.3 => close connection
     s.setblocking(0)
     begin = time.time()
     while 1:
