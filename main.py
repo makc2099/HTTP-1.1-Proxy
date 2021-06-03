@@ -92,6 +92,7 @@ def parser_request(server_name, server_port, msg):
     request_header = request[0]
     request_header = request_header.split(b'\r\n')
     method = request_header[0].decode()
+    method = method[:7]
     if not server_name:
 
         host = request_header[4].decode()
@@ -207,7 +208,7 @@ def proxy(client_socket, client_address):
         server_name, server_port, method, max_age = parser_request(server_name, server_port, request)
         # create file name to find this file in proxy cache
         file_name = ','.join([method, server_name, str(server_port)])
-        print(client_address, method)
+        print(client_address, method, server_name)
         # searches for files in proxy cache, returns cache_status = (1-cache hit, 0-cache miss, -1-no cache)
         respond, cache_status, connection = fetch(file_name)
         # cache hit, return response to client
@@ -221,7 +222,7 @@ def proxy(client_socket, client_address):
             if blacklist(client_socket, client_address, server_name, method):
                 try:
                     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    if method[:7] == 'CONNECT':
+                    if method == 'CONNECT':
                         proxy_https(client_socket, server_socket, server_port, server_name)
                     server_socket.connect((server_name, server_port))
                 except:
